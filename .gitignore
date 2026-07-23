@@ -1,0 +1,13 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Environment secrets
+.env
+
+# OS noise
+.DS_Store
+
+# Node (for later, web/mobile)
+node_modules/

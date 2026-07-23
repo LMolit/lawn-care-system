@@ -1,0 +1,14 @@
+services:
+  database:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: lawncare
+      POSTGRES_PASSWORD: localdevpassword
+      POSTGRES_DB: lawn_care
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
