@@ -16,4 +16,5 @@ from app.db.models.user import User # noqa: F401,E402
 from app.db.models.lead import Lead # noqa: F401,E402
 from app.db.models.customer import Customer # noqa: F401,E402
 from app.db.models.property import Property
+from app.db.models.service import Service
 
