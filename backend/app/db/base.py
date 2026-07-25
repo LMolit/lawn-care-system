@@ -19,4 +19,5 @@ from app.db.models.property import Property
 from app.db.models.service import Service
 from app.db.models.job import Job
 from app.db.models.job_event import JobEvent
+from app.db.models.route import Route
 
