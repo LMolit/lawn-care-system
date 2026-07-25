@@ -17,4 +17,5 @@ from app.db.models.lead import Lead # noqa: F401,E402
 from app.db.models.customer import Customer # noqa: F401,E402
 from app.db.models.property import Property
 from app.db.models.service import Service
+from app.db.models.job import Job
 
