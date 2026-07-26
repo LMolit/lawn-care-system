@@ -23,4 +23,5 @@ from app.db.models.route import Route
 from app.db.models.review import Review
 from app.db.models.invoice import Invoice
 from app.db.models.invoice_line_item import InvoiceLineItem
+from app.db.models.payment import Payment
 
