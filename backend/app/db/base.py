@@ -21,4 +21,5 @@ from app.db.models.job import Job
 from app.db.models.job_event import JobEvent
 from app.db.models.route import Route
 from app.db.models.review import Review
+from app.db.models.invoice import Invoice
 
