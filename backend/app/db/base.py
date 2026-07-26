@@ -24,4 +24,4 @@ from app.db.models.review import Review
 from app.db.models.invoice import Invoice
 from app.db.models.invoice_line_item import InvoiceLineItem
 from app.db.models.payment import Payment
-
+from app.db.models.expense import ExpenseCategory, Expense
