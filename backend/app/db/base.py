@@ -13,17 +13,17 @@ class TimestampMixin:
 # Import all models here so Base.metadata knows about them
 # (Alembic autogenerate only sees tables that have been imported)
 from app.db.models.user import User # noqa: F401,E402
-from app.db.models.lead import Lead # noqa: F401,E402
+from app.db.models.lead import Lead, LeadStatus # noqa: F401,E402
 from app.db.models.customer import Customer # noqa: F401,E402
 from app.db.models.property import Property
 from app.db.models.service import Service
-from app.db.models.job import Job
-from app.db.models.job_event import JobEvent
-from app.db.models.route import Route
+from app.db.models.job import Job, JobStatus, JobType
+from app.db.models.job_event import JobEvent, JobEventType
+from app.db.models.route import Route, RouteStop, RouteStatus
 from app.db.models.review import Review
-from app.db.models.invoice import Invoice
+from app.db.models.invoice import Invoice, InvoiceStatus
 from app.db.models.invoice_line_item import InvoiceLineItem
-from app.db.models.payment import Payment
+from app.db.models.payment import Payment, PaymentMethod
 from app.db.models.expense import ExpenseCategory, Expense
 from app.db.models.invoice_counter import InvoiceCounter
 
