@@ -25,23 +25,23 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-      steps:
-        - name: Check out code
-          uses: actions/chechout@v4
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
 
-        - name: Set up Python
-          uses: actions/setup-python3
-          with:
-            python-version: "3.12"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-        - name: Install dependencies
-          working-directory: backend
-          run: pip install -r requirments.txt
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
 
-        - name: Run migrations against a fresh database
-          working-directory: backend
-          run: alembic upgrade head
+      - name: Run migrations against a fresh database
+        working-directory: backend
+        run: alembic upgrade head
 
-        - name: Lint with ruff
-          working-directory: backend
-          run: pip install ruff && ruff checkl .
+      - name: Lint with ruff
+        working-directory: backend
+        run: pip install ruff && ruff check .
