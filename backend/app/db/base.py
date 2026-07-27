@@ -25,3 +25,5 @@ from app.db.models.invoice import Invoice
 from app.db.models.invoice_line_item import InvoiceLineItem
 from app.db.models.payment import Payment
 from app.db.models.expense import ExpenseCategory, Expense
+from app.db.models.invoice_counter import InvoiceCounter
+
