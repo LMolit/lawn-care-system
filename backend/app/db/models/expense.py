@@ -2,7 +2,7 @@
 import datetime
 
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import ForeignKey, DateTime
+from sqlalchemy import ForeignKey
 
 from app.db.base import Base, TimestampMixin
 

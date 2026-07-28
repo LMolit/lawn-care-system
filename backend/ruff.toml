@@ -1,0 +1,7 @@
+extend-exclude = ["alembic/versions"]
+
+[lint]
+select = ["F", "E9"]
+
+[lint.per-file-ignores]
+"app/db/base.py" = ["F401"]
