@@ -32,7 +32,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: Install dependencies
         working-directory: backend
@@ -45,3 +45,13 @@ jobs:
       - name: Lint with ruff
         working-directory: backend
         run: pip install ruff && ruff check .
+
+      - name: Start app and verify /health responds
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://lawncare:localdevpassword@localhost:5432/lawn_care
+        run: |
+          uvicorn app.main:app &
+          sleep 2
+          curl --fail http://localhost:8000/health
+          kill %1
