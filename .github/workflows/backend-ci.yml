@@ -46,25 +46,15 @@ jobs:
         working-directory: backend
         run: pip install ruff && ruff check .
 
-      - name: Start app and verify /health responds
-        working-directory: backend
-        env:
-          DATABASE_URL: postgresql://lawncare:localdevpassword@localhost:5432/lawn_care
-        run: |
-          uvicorn app.main:app &
-          sleep 2
-          curl --fail http://localhost:8000/health
-          kill %1
-
       - name: Start app and verify /health and /login respond
         working-directory: backend
         env:
           DATABASE_URL: postgresql://lawncare:localdevpassword@localhost:5432/lawn_care
           JWT_SECRET: ci-test-secret-not-for-production
-          run:
-            uvicorn app.main:main:app &
-            sleep 2
-            curl --fail http://localhost:8000/health
+        run: |
+          uvicorn app.main:app &
+          sleep 2
+          curl --fail http://localhost:8000/health
           curl --fail -X POST http://localhost:8000/api/v1/auth/login \
             -H "Content-Type: application/json" \
             -d '{"email": "owner@lawncare.local", "password": "wrongpassword"}' \
