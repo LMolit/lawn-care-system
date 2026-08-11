@@ -9,6 +9,10 @@ class TokenResponse(BaseModel):
     refresh_token: str
     token_type: str = "bearer" 
 
+class AccessTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
 class UserResponse(BaseModel):
     id: int
     email: str
@@ -16,3 +20,6 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
