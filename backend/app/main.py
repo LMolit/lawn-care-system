@@ -3,11 +3,12 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
-from app.routers import auth
+from app.routers import auth, leads
 
 app = FastAPI()
 
 app.include_router(auth.router)
+app.include_router(leads.router)
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):
