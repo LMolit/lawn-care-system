@@ -64,5 +64,14 @@ jobs:
             -d '{"name": "CI Test", "email": "ci@example.com", "phone": null, "address": "1 CI Way", "message": null}'
           curl -X GET http://localhost:8000/api/v1/leads \
             -o /dev/null -w "%{http_code}" | grep -q 401
+          LEAD_ID=$(curl --fail -X POST http://localhost:8000/api/v1/leads \
+            -H "Content-Type: application/json" \
+            -d '{"name": "Convert Me", "email": "convert@example.com", "phone": null, "address": "2 CI Way", "message": null}' \
+            | jq -r .id)
+          curl --fail -X POST "http://localhost:8000/api/v1/leads/00000000-0000-0000-0000-000000000000/convert" \
+            -o /dev/null -w "%{http_code}" | grep -q 404
+          curl --fail -X POST "http://localhost:8000/api/v1/leads/${LEAD_ID}/convert" \
+            -o /dev/null -w "%{http_code}" | grep -q 201
+          curl -X POST "http://localhost:8000/api/v1/leads/${LEAD_ID}/convert" \
+            -o /dev/null -w "%{http_code}" | grep -q 409
           kill %1
-
