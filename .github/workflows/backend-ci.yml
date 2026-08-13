@@ -42,9 +42,28 @@ jobs:
         working-directory: backend
         run: alembic upgrade head
 
+      - name: Create a test user for CI auth checks
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://lawncare:localdevpassword@localhost:5432/lawn_care
+          JWT_SECRET: ci-test-secret-not-for-production
+        run: |
+          python3 -c "
+          from app.db.session import SessionLocal
+          from app.db.base import User
+          from app.core.security import hash_password
+
+          db = SessionLocal()
+          user = User(email='ci@lawncare.local', password_hash=hash_password('ci-test-password'), name='CI Test User')
+          db.add(user)
+          db.commit()
+          db.close()
+          "
+
       - name: Lint with ruff
         working-directory: backend
         run: pip install ruff && ruff check .
+
 
       - name: Start app and verify /health and /login respond
         working-directory: backend
@@ -64,14 +83,21 @@ jobs:
             -d '{"name": "CI Test", "email": "ci@example.com", "phone": null, "address": "1 CI Way", "message": null}'
           curl -X GET http://localhost:8000/api/v1/leads \
             -o /dev/null -w "%{http_code}" | grep -q 401
+          TOKEN=$(curl --fail -X POST http://localhost:8000/api/v1/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"email": "ci@lawncare.local", "password": "ci-test-password"}' \
+            | jq -r .access_token)
           LEAD_ID=$(curl --fail -X POST http://localhost:8000/api/v1/leads \
             -H "Content-Type: application/json" \
             -d '{"name": "Convert Me", "email": "convert@example.com", "phone": null, "address": "2 CI Way", "message": null}' \
             | jq -r .id)
           curl --fail -X POST "http://localhost:8000/api/v1/leads/00000000-0000-0000-0000-000000000000/convert" \
+            -H "Authorization: Bearer ${TOKEN}" \
             -o /dev/null -w "%{http_code}" | grep -q 404
           curl --fail -X POST "http://localhost:8000/api/v1/leads/${LEAD_ID}/convert" \
+            -H "Authorization: Bearer ${TOKEN}" \
             -o /dev/null -w "%{http_code}" | grep -q 201
           curl -X POST "http://localhost:8000/api/v1/leads/${LEAD_ID}/convert" \
+            -H "Authorization: Bearer ${TOKEN}" \
             -o /dev/null -w "%{http_code}" | grep -q 409
           kill %1
