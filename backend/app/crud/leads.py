@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.exceptions import NotFoundError, ConflictError
 from app.crud.customers import create_customer
 
-from app.db.base import Lead, LeadStatus
+from app.db.base import Lead, LeadStatus, Customer
 
 def create_lead(db: Session, *, name: str, email: str | None, phone: str | None, address: str, message: str | None) -> Lead:
     lead = Lead(name=name, email=email, phone=phone, address=address, message=message) 
