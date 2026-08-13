@@ -46,7 +46,7 @@ jobs:
         working-directory: backend
         run: pip install ruff && ruff check .
 
-        - name: Start app and verify /health and /login respond
+      - name: Start app and verify /health and /login respond
         working-directory: backend
         env:
           DATABASE_URL: postgresql://lawncare:localdevpassword@localhost:5432/lawn_care
@@ -65,3 +65,4 @@ jobs:
           curl -X GET http://localhost:8000/api/v1/leads \
             -o /dev/null -w "%{http_code}" | grep -q 401
           kill %1
+
