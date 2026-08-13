@@ -2,6 +2,8 @@ import uuid
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from app.exceptions import NotFoundError, ConflictError
+from app.crud.customers import create_customer
 
 from app.db.base import Lead, LeadStatus
 
@@ -30,3 +32,22 @@ def get_leads(db: Session, *, status: LeadStatus | None = None, page: int = 1, p
     items = list(db.scalars(query))
 
     return items, total
+
+def convert_lead(db: Session, lead_id: uuid.UUID) -> Customer:
+    lead = db.get(Lead, lead_id)
+    if lead is None:
+        raise NotFoundError(f"Lead {lead_id} not found")
+
+    if lead.status == LeadStatus.converted:
+        raise ConflictError(f"Lead {lead_id} has already been converted")
+
+    customer = create_customer(
+        db, name=lead.name, email=lead.email, phone=lead.phone, lead_id=lead.id,
+    )
+
+    lead.status = LeadStatus.converted
+    lead.converted_customer_id = customer.id
+
+    db.commit()
+    db.refresh(customer)
+    return customer
