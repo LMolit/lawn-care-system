@@ -5,12 +5,13 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
 from app.exceptions import NotFoundError, ConflictError
-from app.routers import auth, leads
+from app.routers import auth, leads, reviews
 
 app = FastAPI()
 
 app.include_router(auth.router)
 app.include_router(leads.router)
+app.include_router(reviews.router)
 
 @app.exception_handler(NotFoundError)
 def not_found_handler(request, exc: NotFoundError):
