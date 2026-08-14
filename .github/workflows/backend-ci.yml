@@ -64,7 +64,6 @@ jobs:
         working-directory: backend
         run: pip install ruff && ruff check .
 
-
       - name: Start app and verify /health and /login respond
         working-directory: backend
         env:
@@ -100,4 +99,20 @@ jobs:
           curl -X POST "http://localhost:8000/api/v1/leads/${LEAD_ID}/convert" \
             -H "Authorization: Bearer ${TOKEN}" \
             -o /dev/null -w "%{http_code}" | grep -q 409
+          REVIEW_ID=$(curl --fail -X POST http://localhost:8000/api/v1/reviews \
+            -H "Content-Type: application/json" \
+            -d '{"name": "CI Reviewer", "rating": 5, "comment": "great"}' \
+            | jq -r .id)
+          curl -X POST http://localhost:8000/api/v1/reviews \
+            -H "Content-Type: application/json" \
+            -d '{"name": "Bad Rating", "rating": 8, "comment": "should fail"}' \
+            -o /dev/null -w "%{http_code}" | grep -q 422
+          curl --fail -X PATCH "http://localhost:8000/api/v1/reviews/${REVIEW_ID}/approve" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"approved": true}' \
+            -o /dev/null -w "%{http_code}" | grep -q 200
           kill %1
+
+
+
