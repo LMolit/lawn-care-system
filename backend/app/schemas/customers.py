@@ -13,5 +13,24 @@ class CustomerResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Congig:
+    class Config:
         from_attributes = True
+
+class CustomerCreate(BaseModel):
+    name: str
+    email: str | None = None
+    phone: str | None = None
+    notes: str | None = None
+
+class CustomerUpdate(BaseModel):
+    name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    notes: str | None = None
+    active: bool | None = None
+
+class CustomerListResponse(BaseModel):
+    items: list[CustomerResponse]
+    total: int
+    page: int
+    page_size: int
