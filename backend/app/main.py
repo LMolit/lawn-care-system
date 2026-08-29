@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
 from app.exceptions import NotFoundError, ConflictError
-from app.routers import auth, leads, reviews, customers
+from app.routers import auth, leads, reviews, customers, properties
 
 app = FastAPI()
 
@@ -13,6 +13,7 @@ app.include_router(auth.router)
 app.include_router(leads.router)
 app.include_router(reviews.router)
 app.include_router(customers.router)
+app.include_router(properties.router)
 
 @app.exception_handler(NotFoundError)
 def not_found_handler(request, exc: NotFoundError):
