@@ -63,7 +63,7 @@ def create_property(
         access_notes=access_notes,
     )
     db.add(property)
-    db.flush()
+    db.commit()
     return _property_to_dict(property)
 
 

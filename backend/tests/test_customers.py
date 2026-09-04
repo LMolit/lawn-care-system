@@ -1,3 +1,5 @@
+from app.db.base import Customer
+
 def test_create_customer_returns_201(authed_client):
     response = authed_client.post(
         "/api/v1/customers",
@@ -79,4 +81,10 @@ def test_create_customer_with_only_name(authed_client):
     assert body["email"] is None
     assert body["phone"] is None
 
+def test_created_customer_persists_after_commit(authed_client, db_session):
+    response = authed_client.post("/api/v1/customers", json={"name": "Persistence Check"})
+    customer_id = response.json()["id"]
 
+    db_session.commit()  # forces any pending SAVEPOINT to actually flush through
+    found = db_session.get(Customer, customer_id)
+    assert found is not None

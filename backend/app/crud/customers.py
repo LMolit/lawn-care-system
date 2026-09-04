@@ -9,7 +9,7 @@ from app.exceptions import NotFoundError
 def create_customer(db: Session, *, name: str, email: str | None, phone: str | None, notes: str |None = None, lead_id: uuid.UUID | None = None) -> Customer:
     customer = Customer(name=name, email=email, phone=phone, notes=notes, lead_id=lead_id)
     db.add(customer)
-    db.flush()
+    db.commit()
     return customer
 
 def get_customer(db: Session, *, id: int) -> Customer:
