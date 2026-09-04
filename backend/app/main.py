@@ -4,8 +4,8 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
-from app.exceptions import NotFoundError, ConflictError
-from app.routers import auth, leads, reviews, customers, properties, services
+from app.exceptions import NotFoundError, ConflictError, ValidationError
+from app.routers import auth, leads, reviews, customers, properties, services, jobs
 
 app = FastAPI()
 
@@ -15,6 +15,7 @@ app.include_router(reviews.router)
 app.include_router(customers.router)
 app.include_router(properties.router)
 app.include_router(services.router)
+app.include_router(jobs.router)
 
 @app.exception_handler(NotFoundError)
 def not_found_handler(request, exc: NotFoundError):
@@ -35,3 +36,9 @@ def health_check(db: Session = Depends(get_db)):
     db.execute(text("SELECT 1"))
     return {"status": "ok"}
 
+@app.exception_handler(ValidationError)
+def validation_error_handler(request, exc: ValidationError):
+    return JSONResponse(
+        status_code=400,
+        content={"error": "validation_error", "message": exc.message, "detail": None},
+    )
