@@ -1,8 +1,11 @@
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
+from datetime import timedelta
+from geoalchemy2.shape import from_shape
+from shapely.geometry import Point
 
-from app.db.base import Job, Customer, Property, Service
-from app.exceptions import NotFoundError, ValidationError
+from app.db.base import Job, Customer, Property, Service, JobEvent, JobStatus, JobEventType
+from app.exceptions import NotFoundError, ValidationError, ConflictError
 
 
 def get_job(db: Session, *, id: int) -> Job:
@@ -112,5 +115,57 @@ def update_job(
     if notes is not None:
         job.notes = notes
 
+    db.commit()
+    return job
+
+def start_job(db: Session, *, id: int, latitude: float, longitude: float, timestamp) -> Job:
+    job = db.get(Job, id)
+    if job is None:
+        raise NotFoundError(f"Job {id} not found")
+
+    if job.status != JobStatus.scheduled:
+        raise ConflictError(f"Job {id} is not scheduled (current status: {job.status})")
+
+    location = from_shape(Point(longitude, latitude), srid=4326)
+    event = JobEvent(
+        job_id=id,
+        event_type=JobEventType.started,
+        timestamp=timestamp,
+        location=location,
+    )
+    db.add(event)
+
+    job.status = JobStatus.in_progress
+    db.commit()
+    return job
+
+
+def complete_job(db: Session, *, id: int, latitude: float, longitude: float, timestamp) -> Job:
+    job = db.get(Job, id)
+    if job is None:
+        raise NotFoundError(f"Job {id} not found")
+
+    if job.status != JobStatus.in_progress:
+        raise ConflictError(f"Job {id} is not in progress (current status: {job.status})")
+
+    location = from_shape(Point(longitude, latitude), srid=4326)
+    event = JobEvent(
+        job_id=id,
+        event_type=JobEventType.completed,
+        timestamp=timestamp,
+        location=location,
+    )
+    db.add(event)
+
+    started_event = db.scalar(
+        select(JobEvent)
+        .where(JobEvent.job_id == id, JobEvent.event_type == JobEventType.started)
+        .order_by(JobEvent.timestamp.desc())
+    )
+    if started_event is not None:
+        elapsed = timestamp - started_event.timestamp
+        job.actual_duration_minutes = int(elapsed.total_seconds() / 60)
+
+    job.status = JobStatus.completed
     db.commit()
     return job

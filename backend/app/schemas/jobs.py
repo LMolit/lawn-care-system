@@ -65,3 +65,8 @@ class JobListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+class JobEventRequest(BaseModel):
+    latitude: float
+    longitude: float
+    timestamp: datetime

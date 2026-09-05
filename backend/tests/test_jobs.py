@@ -141,3 +141,94 @@ def test_update_job_price_preserves_other_fields(authed_client):
     assert body["price"] == 60.00
     assert body["notes"] == "Original notes"
     assert body["status"] == "scheduled"
+
+def _create_scheduled_job(authed_client):
+    """Helper: builds a full customer/property/service chain and a real
+    scheduled job, returning its id for start/complete tests."""
+    customer_id, property_id, service_id = _create_customer_property_service(authed_client)
+    response = authed_client.post(
+        "/api/v1/jobs",
+        json={
+            "customer_id": customer_id,
+            "property_id": property_id,
+            "service_id": service_id,
+            "scheduled_date": FUTURE_DATE,
+            "price": 45.00,
+        },
+    )
+    return response.json()["id"]
+
+
+def test_start_job_sets_in_progress(authed_client):
+    job_id = _create_scheduled_job(authed_client)
+
+    response = authed_client.post(
+        f"/api/v1/jobs/{job_id}/start",
+        json={"latitude": 41.5, "longitude": -87.5, "timestamp": "2026-09-05T09:00:00Z"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "in_progress"
+
+
+def test_start_already_started_job_returns_409(authed_client):
+    job_id = _create_scheduled_job(authed_client)
+
+    first = authed_client.post(
+        f"/api/v1/jobs/{job_id}/start",
+        json={"latitude": 41.5, "longitude": -87.5, "timestamp": "2026-09-05T09:00:00Z"},
+    )
+    assert first.status_code == 200
+
+    second = authed_client.post(
+        f"/api/v1/jobs/{job_id}/start",
+        json={"latitude": 41.5, "longitude": -87.5, "timestamp": "2026-09-05T09:05:00Z"},
+    )
+    assert second.status_code == 409
+
+
+def test_complete_job_calculates_duration(authed_client):
+    job_id = _create_scheduled_job(authed_client)
+
+    authed_client.post(
+        f"/api/v1/jobs/{job_id}/start",
+        json={"latitude": 41.5, "longitude": -87.5, "timestamp": "2026-09-05T09:00:00Z"},
+    )
+
+    response = authed_client.post(
+        f"/api/v1/jobs/{job_id}/complete",
+        json={"latitude": 41.5, "longitude": -87.5, "timestamp": "2026-09-05T09:45:00Z"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "completed"
+    assert body["actual_duration_minutes"] == 45
+
+
+def test_complete_job_without_starting_returns_409(authed_client):
+    job_id = _create_scheduled_job(authed_client)
+
+    response = authed_client.post(
+        f"/api/v1/jobs/{job_id}/complete",
+        json={"latitude": 41.5, "longitude": -87.5, "timestamp": "2026-09-05T09:45:00Z"},
+    )
+    assert response.status_code == 409
+
+
+def test_complete_already_completed_job_returns_409(authed_client):
+    job_id = _create_scheduled_job(authed_client)
+
+    authed_client.post(
+        f"/api/v1/jobs/{job_id}/start",
+        json={"latitude": 41.5, "longitude": -87.5, "timestamp": "2026-09-05T09:00:00Z"},
+    )
+    first_complete = authed_client.post(
+        f"/api/v1/jobs/{job_id}/complete",
+        json={"latitude": 41.5, "longitude": -87.5, "timestamp": "2026-09-05T09:45:00Z"},
+    )
+    assert first_complete.status_code == 200
+
+    second_complete = authed_client.post(
+        f"/api/v1/jobs/{job_id}/complete",
+        json={"latitude": 41.5, "longitude": -87.5, "timestamp": "2026-09-05T10:00:00Z"},
+    )
+    assert second_complete.status_code == 409

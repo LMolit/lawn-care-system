@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.base import User
 from app.crud import jobs as jobs_crud
 from app.dependencies import get_db, get_current_user
-from app.schemas.jobs import JobCreate, JobUpdate, JobResponse, JobListResponse
+from app.schemas.jobs import JobCreate, JobUpdate, JobResponse, JobListResponse, JobEventRequest
 
 router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
 
@@ -56,4 +56,25 @@ def update_job(id: int, payload: JobUpdate, db: Session = Depends(get_db), curre
         price=payload.price,
         estimated_duration_minutes=payload.estimated_duration_minutes,
         notes=payload.notes,
+    )
+
+@router.post("/{id}/start", response_model=JobResponse)
+def start_job(id: int, payload: JobEventRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return jobs_crud.start_job(
+        db,
+        id=id,
+        latitude=payload.latitude,
+        longitude=payload.longitude,
+        timestamp=payload.timestamp,
+    )
+
+
+@router.post("/{id}/complete", response_model=JobResponse)
+def complete_job(id: int, payload: JobEventRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return jobs_crud.complete_job(
+        db,
+        id=id,
+        latitude=payload.latitude,
+        longitude=payload.longitude,
+        timestamp=payload.timestamp,
     )
