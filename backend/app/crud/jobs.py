@@ -1,6 +1,5 @@
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
-from datetime import timedelta
 from geoalchemy2.shape import from_shape
 from shapely.geometry import Point
 
