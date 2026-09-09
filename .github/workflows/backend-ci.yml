@@ -72,4 +72,5 @@ jobs:
         working-directory: backend
         env:
           JWT_SECRET: ci-test-secret-not-for-production
+          OPENROUTESERVICE_API_KEY: ${{ secrets.OPENROUTESERVICE_API_KEY }}
         run: pytest -v

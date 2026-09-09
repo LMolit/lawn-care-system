@@ -2,7 +2,7 @@ import enum
 import datetime
 
 from sqlalchemy import ForeignKey, UniqueConstraint, DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
 
@@ -21,7 +21,8 @@ class Route(Base, TimestampMixin):
     status: Mapped[RouteStatus] = mapped_column(default=RouteStatus.planned)
     total_distance_miles: Mapped[float | None]
     total_duration_minutes: Mapped[float | None]
-    algorithm_used: Mapped[str] # 
+    algorithm_used: Mapped[str] 
+    stops: Mapped[list["RouteStop"]] = relationship(back_populates="route", order_by="RouteStop.sequence_order")
 
 
 class RouteStop(Base, TimestampMixin):
@@ -33,5 +34,6 @@ class RouteStop(Base, TimestampMixin):
     sequence_order: Mapped[int]
     estimated_arrival_time: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True))
     actual_arrival_time: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True))
+    route: Mapped["Route"] = relationship(back_populates="stops")
 
     __table_args__ = (UniqueConstraint("route_id", "sequence_order"),)
