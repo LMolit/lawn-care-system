@@ -2,7 +2,7 @@ import enum
 
 from datetime import date, datetime
 from sqlalchemy import ForeignKey, DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
 
@@ -26,3 +26,4 @@ class Invoice(Base, TimestampMixin):
     tax: Mapped[float]
     total: Mapped[float]
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    line_items: Mapped[list["InvoiceLineItem"]] = relationship(back_populates="invoice")

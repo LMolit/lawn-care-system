@@ -1,5 +1,5 @@
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
 
@@ -13,3 +13,4 @@ class InvoiceLineItem(Base, TimestampMixin):
     quantity: Mapped[float]
     unit_price: Mapped[float]
     total: Mapped[float]
+    invoice: Mapped["Invoice"] = relationship(back_populates="line_items")
