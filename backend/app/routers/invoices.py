@@ -21,3 +21,7 @@ def create_invoice(payload: InvoiceCreate, db: Session = Depends(get_db), curren
 @router.post("/{id}/send", response_model=InvoiceResponse)
 def send_invoice(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return invoices_crud.send_invoice(db, id=id)
+
+@router.get("/{id}", response_model=InvoiceResponse)
+def get_invoice(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return invoices_crud.get_invoice(db, id=id)

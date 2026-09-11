@@ -85,3 +85,9 @@ def send_invoice(db: Session, *, id: int) -> Invoice:
     db.commit()
     db.refresh(invoice)
     return invoice
+
+def get_invoice(db: Session, *, id: int) -> Invoice:
+    invoice = db.get(Invoice, id)
+    if invoice is None:
+        raise NotFoundError(f"Invoice {id} not found")
+    return invoice
