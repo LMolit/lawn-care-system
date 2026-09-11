@@ -1,4 +1,3 @@
-from tests.test_jobs import _create_customer_property_service
 from tests.test_jobs import _create_customer_property_service, FUTURE_DATE
 
 def test_create_invoice_returns_201(authed_client):

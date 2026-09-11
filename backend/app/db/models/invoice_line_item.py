@@ -3,6 +3,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.db.models.invoice import Invoice
+
 class InvoiceLineItem(Base, TimestampMixin):
     __tablename__ = "invoice_line_items"
 

@@ -6,6 +6,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.db.models.invoice_line_item import InvoiceLineItem
+
 class InvoiceStatus(str, enum.Enum):
     draft = "draft"
     sent = "sent"
