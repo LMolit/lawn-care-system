@@ -1,4 +1,3 @@
-# routers/invoices.py
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -18,3 +17,7 @@ def create_invoice(payload: InvoiceCreate, db: Session = Depends(get_db), curren
         job_ids=payload.job_ids,
         due_date=payload.due_date,
     )
+
+@router.post("/{id}/send", response_model=InvoiceResponse)
+def send_invoice(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return invoices_crud.send_invoice(db, id=id)

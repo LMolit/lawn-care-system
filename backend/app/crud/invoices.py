@@ -1,13 +1,12 @@
-# crud/invoices.py
-from datetime import date as date_type
+from datetime import date as date_type, datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.base import Invoice, InvoiceLineItem, Job, JobStatus, Service, Customer
+from app.db.base import Invoice, InvoiceLineItem, Job, JobStatus, Service, Customer, InvoiceStatus
 from app.exceptions import NotFoundError, ConflictError, ValidationError
 from app.services.invoicing import get_next_invoice_number
-
+from app.services.email import render_invoice_pdf, send_invoice_email
 
 def create_invoice(db: Session, *, customer_id: int, job_ids: list[int], due_date: date_type) -> Invoice:
     customer = db.get(Customer, customer_id)
@@ -67,6 +66,22 @@ def create_invoice(db: Session, *, customer_id: int, job_ids: list[int], due_dat
         line_item.invoice_id = invoice.id
         db.add(line_item)
 
+    db.commit()
+    db.refresh(invoice)
+    return invoice
+
+def send_invoice(db: Session, *, id: int) -> Invoice:
+    invoice = db.get(Invoice, id)
+    if invoice is None:
+        raise NotFoundError(f"Invoice {id} not found")
+
+    customer = db.get(Customer, invoice.customer_id)
+
+    pdf_bytes = render_invoice_pdf(invoice, customer)
+    send_invoice_email(invoice, customer, pdf_bytes)
+
+    invoice.status = InvoiceStatus.sent
+    invoice.sent_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(invoice)
     return invoice

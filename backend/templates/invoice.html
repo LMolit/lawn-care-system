@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    body { font-family: Arial, sans-serif; color: #222; margin: 40px; }
+    h1 { color: #2d6a4f; }
+    .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
+    .meta { text-align: right; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }
+    th { background: #f4f4f4; }
+    .totals { margin-top: 20px; text-align: right; }
+    .totals div { margin: 4px 0; }
+    .grand-total { font-size: 1.2em; font-weight: bold; }
+</style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>{{ business_name }}</h1>
+        </div>
+        <div class="meta">
+            <strong>Invoice {{ invoice.invoice_number }}</strong><br>
+            Issued: {{ invoice.issue_date }}<br>
+            Due: {{ invoice.due_date }}
+        </div>
+    </div>
+
+    <p><strong>Bill to:</strong><br>{{ customer.name }}</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.line_items %}
+            <tr>
+                <td>{{ item.description }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>${{ "%.2f"|format(item.unit_price) }}</td>
+                <td>${{ "%.2f"|format(item.total) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <div>Subtotal: ${{ "%.2f"|format(invoice.subtotal) }}</div>
+        <div>Tax: ${{ "%.2f"|format(invoice.tax) }}</div>
+        <div class="grand-total">Total: ${{ "%.2f"|format(invoice.total) }}</div>
+    </div>
+</body>
+</html>
