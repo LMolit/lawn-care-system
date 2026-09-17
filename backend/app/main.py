@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -8,6 +9,14 @@ from app.exceptions import NotFoundError, ConflictError, ValidationError
 from app.routers import auth, leads, reviews, customers, properties, services, jobs, routes, invoices, payments, expenses, analytics
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    )
 
 app.include_router(auth.router)
 app.include_router(leads.router)
