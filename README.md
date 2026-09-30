@@ -1,58 +1,52 @@
 # Lawn Care Business System
 
-A self hosted, full stack business management system for my lawn care business.
+A self-hosted business management system for a lawn care company. It replaces spreadsheets and manual tracking with one place to manage leads, customers, jobs, routes, invoices, payments, and expenses.
 
-## What it does
+The long-term setup is a public website, a mobile app for day-to-day work, and a backend API on a single server. Clients never talk to the database directly.
 
-Replaces manual lead tracking, scheduling, routing, job tracking, invoicing, with one system. Public lead-capture site, a backend API with the actual business logic, and a mobile app for day to day use.
+## What is built today
 
-## Architecture
+The **backend API** is the working product. It includes:
 
-Internet
-|
-|
-Cloudflare Tunnel -> reverse proxy
-|
-|-> FastAPI backend —--> PostgreSQL + PostGIS
-|      |
-|      |-> Next.js(public site) 
-|
-|-> Mobile app
+- JWT login (access and refresh tokens)
+- Lead capture and converting a lead into a customer
+- Customers, properties (with map coordinates), and services
+- Job scheduling, start/complete, and routing for a day’s stops
+- Invoices (PDF + email), payments, expenses, and basic analytics
+- Automated tests and GitHub Actions CI against PostgreSQL + PostGIS
 
-Both the public site and Mobile app talk to the backend not directly to the database. 
-
-Single VM, for docker compose services (proxy, web, backend, database). No client ever talks to the database directly, everything goes through the backend API.
+The **web app** is a Next.js starter and is not a finished product UI yet. The **mobile app** and production hosting (reverse proxy, Cloudflare Tunnel, full Docker stack) are planned and not started.
 
 ## Stack
 
-|Layer | Choice |
-|------|--------|
-|Database| PostgreSQL + PostGis|
-|ORM/migrations | SQLAlchemy 2.x + Alembic |
-|Backend | Python, FastAPI |
-|Routing algorithm | Custom nearest neighbor (phase 1) 2-opt / simulated annealing (planned for phase 2) |
-|Web | Next.js, Tailwind |
-|Mobile | React Native + Expo, offline built work queue |
-|Auth | JWT no third party provider |
+| Layer | Choice |
+|-------|--------|
+| API | Python, FastAPI |
+| Database | PostgreSQL + PostGIS |
+| ORM / migrations | SQLAlchemy 2 + Alembic |
+| Auth | JWT (no third-party login) |
+| Routing | OpenRouteService + nearest-neighbor (simpler algorithms first) |
+| Invoicing | HTML template → PDF → email (Resend) |
+| Web (in progress) | Next.js, React, Tailwind |
+| Mobile (planned) | React Native + Expo |
+| Infra (planned) | Docker Compose, Caddy, Cloudflare Tunnel |
 
-|Infra | docker compose, caddy, cloudflare tunnel |
+## How it is organized
 
-## engineering decisions
+```
+backend/   FastAPI app, database models, migrations, tests
+web/       Next.js frontend (starter)
+infra/     Local Postgres/PostGIS for development
+mobile/    Planned field app (empty)
+packages/  Planned shared API client (empty)
+```
 
-- Circular foreign key between leads and customers (each references the other), deferred one constraint to a second migration once both tables exist.
-- UUID vs integer primary keys chosen per table. UUIDs only used on tables reachable via public endpoints(leads, reviews). This is to prevent ID enumeration, sequential ints everywhere else for simplicity when there is no exposure risk.
+## Design notes (short)
 
-## deferred to phase 2
+- Public-facing records (leads, reviews) use UUIDs so IDs are harder to guess. Internal tables use simple integer IDs.
+- One-person company for now, so there is a single admin role. Crew accounts, recurring jobs, and a job queue are deferred until they are needed.
+- Everything goes through the API so the website and a future mobile app can share the same business logic.
 
-|feature | why deferred |
-|--------|--------------|
-|Background task queue | Not enough volume to be worth it currently |
-|Recurring job auto generation | manual creation fine for now |
-|Role based access/multi user | Only one person running the company with no employees, will add it if needed |
-|ios build | owner uses android so not needed and to save on apple developer pack no apple app |
-| automated backups | This is not necessary until we have data to back up, and as a small system won't be essential at first |
+## Status
 
-## status
-
-Actively in development. Currently built, database schema (users, leads, customers, circular FK resolved and verified).
-
+Actively in development. Backend and database are the mature parts of the repo. Frontend and mobile are next.

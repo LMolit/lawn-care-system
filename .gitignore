@@ -8,6 +8,8 @@ __pycache__/
 
 # OS noise
 .DS_Store
+*.swp
+*.swo
 
 # Node (for later, web/mobile)
 node_modules/
