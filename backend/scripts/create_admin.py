@@ -26,13 +26,20 @@ def main() -> None:
             sys.exit(f"Aborting: users table already has {existing} row(s).")
 
         email = input("Admin email: ").strip()
+        name = input("Your name: ").strip()
+        if not name:
+            sys.exit("Name is required.")
         password = getpass.getpass("Password (min 12 characters): ")
         if len(password) < 12:
             sys.exit("Password too short.")
         if password != getpass.getpass("Confirm password: "):
             sys.exit("Passwords did not match.")
 
-        values = {"email": email, password_columns[0]: hash_password(password)}
+        values = {
+            "email": email,
+            "name": name,
+            password_columns[0]: hash_password(password),
+        }
         if "active" in columns:
             values["active"] = True
 
