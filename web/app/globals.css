@@ -1,26 +1,40 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Colors: Tailwind v4 turns every --color-* variable here into utility
+   classes automatically (bg-forest, text-ink, border-line, etc.) */
+@theme {
+  --color-forest: #2f5d3a;       /* primary: buttons, headings */
+  --color-forest-dark: #1f4029;  /* hover states, footer */
+  --color-bark: #8b5e3c;         /* warm brown accent */
+  --color-gold: #e0a630;         /* pulled from the logo's breeches */
+  --color-cream: #faf7f0;        /* page background */
+  --color-surface: #ffffff;      /* cards */
+  --color-ink: #1c2b21;          /* main text */
+  --color-muted: #5b6b60;        /* secondary text */
+  --color-line: #e4ddcc;         /* borders and dividers */
 }
 
+/* Fonts: "inline" is needed because these values point at other CSS
+   variables (set by next/font in layout.tsx). Without it, Tailwind
+   can resolve them in the wrong place and the fonts silently fail. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Global defaults applied to every page */
+@layer base {
+  html {
+    scroll-behavior: smooth;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    @apply bg-cream text-ink font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display text-forest-dark;
+  }
 }

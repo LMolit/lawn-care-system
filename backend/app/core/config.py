@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     database_url: str
     jwt_secret: str
@@ -9,8 +10,10 @@ class Settings(BaseSettings):
     email_api_key: str
     email_from_address: str
     business_name: str = "Liberty Lawn Care"
+    cors_origins: str = "http://localhost:3000"
 
     class Config:
         env_file = ".env"
+
 
 settings = Settings()
