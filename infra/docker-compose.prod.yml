@@ -1,0 +1,78 @@
+name: liberty
+
+networks:
+  public:
+  internal:
+
+volumes:
+  postgres_data:
+
+services:
+  proxy:
+    image: caddy:2
+    restart: unless-stopped
+    networks: [public, internal]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on: [web, backend]
+
+  web:
+    build:
+      context: ..
+      dockerfile: web/Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: https://libertylawncarebatavia.com
+        NEXT_PUBLIC_API_URL: https://libertylawncarebatavia.com
+    restart: unless-stopped
+    networks: [internal]
+    environment:
+      API_INTERNAL_URL: http://backend:8000
+    expose:
+      - "3000"
+    depends_on: [backend]
+
+  backend:
+    build: ../backend
+    restart: unless-stopped
+    networks: [internal]
+    environment:
+      DATABASE_URL: postgresql://lawn_app:${DB_PASSWORD}@database:5432/lawn_care
+      JWT_SECRET: ${JWT_SECRET}
+      OPENROUTESERVICE_API_KEY: ${ORS_API_KEY}
+      EMAIL_API_KEY: ${EMAIL_API_KEY}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
+      CORS_ORIGINS: https://libertylawncarebatavia.com
+    expose:
+      - "8000"
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  database:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    networks: [internal]
+    environment:
+      POSTGRES_USER: lawn_app
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: lawn_care
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lawn_app -d lawn_care"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # deliberately no ports: only containers on `internal` can reach it
