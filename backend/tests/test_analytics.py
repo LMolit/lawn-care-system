@@ -1,4 +1,5 @@
 from tests.test_jobs import _create_customer_property_service, FUTURE_DATE
+from datetime import date, timedelta
 
 def test_get_overview_requires_auth(client):
     response = client.get("/api/v1/analytics/overview")
@@ -14,16 +15,22 @@ def test_get_overview_returns_expected_shape(authed_client):
     assert "active_customers" in body
     assert "avg_job_duration_minutes" in body
 
-
 def test_profit_loss_matches_revenue_and_expenses(authed_client, db_session):
     from app.db.base import ExpenseCategory
+
+    today = date.today()
+    start = today.replace(day=1)
+    end = today + timedelta(days=1)  # a day of slack for UTC vs local time
+    started = f"{today.isoformat()}T09:00:00Z"
+    finished = f"{today.isoformat()}T09:45:00Z"
+
     category = ExpenseCategory(name="Test PL Category")
     db_session.add(category)
     db_session.commit()
 
     authed_client.post(
         "/api/v1/expenses",
-        json={"category_id": category.id, "description": "Test expense", "amount": 30.00, "date": "2026-09-11"},
+        json={"category_id": category.id, "description": "Test expense", "amount": 30.00, "date": today.isoformat()},
     )
 
     customer_id, property_id, service_id = _create_customer_property_service(authed_client)
@@ -38,14 +45,16 @@ def test_profit_loss_matches_revenue_and_expenses(authed_client, db_session):
         },
     )
     job_id = job_response.json()["id"]
-    authed_client.post(f"/api/v1/jobs/{job_id}/start", json={"latitude": 1.0, "longitude": 1.0, "timestamp": "2026-09-09T09:00:00Z"})
-    authed_client.post(f"/api/v1/jobs/{job_id}/complete", json={"latitude": 1.0, "longitude": 1.0, "timestamp": "2026-09-09T09:45:00Z"})
+    authed_client.post(f"/api/v1/jobs/{job_id}/start", json={"latitude": 1.0, "longitude": 1.0, "timestamp": started})
+    authed_client.post(f"/api/v1/jobs/{job_id}/complete", json={"latitude": 1.0, "longitude": 1.0, "timestamp": finished})
     authed_client.post(
         "/api/v1/invoices",
-        json={"customer_id": customer_id, "job_ids": [job_id], "due_date": "2027-01-01"},
+        json={"customer_id": customer_id, "job_ids": [job_id], "due_date": (today + timedelta(days=30)).isoformat()},
     )
 
-    response = authed_client.get("/api/v1/analytics/profit-loss?start_date=2026-09-01&end_date=2026-09-30")
+    response = authed_client.get(
+        f"/api/v1/analytics/profit-loss?start_date={start.isoformat()}&end_date={end.isoformat()}"
+    )
     assert response.status_code == 200
     body = response.json()
     assert body["revenue"] == 100.0
