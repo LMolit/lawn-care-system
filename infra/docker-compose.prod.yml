@@ -8,6 +8,14 @@ volumes:
   postgres_data:
 
 services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    networks: [public]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+
   proxy:
     image: caddy:2
     restart: unless-stopped
