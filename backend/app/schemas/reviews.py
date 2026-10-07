@@ -1,12 +1,16 @@
 import uuid
-
 from datetime import datetime
+
 from pydantic import BaseModel, Field
 
+from app.schemas.types import LongText, ShortText
+
+
 class ReviewCreate(BaseModel):
-    name: str
+    name: ShortText
     rating: int = Field(ge=1, le=5)
-    comment: str | None = None
+    comment: LongText | None = None
+
 
 class ReviewResponse(BaseModel):
     id: uuid.UUID
@@ -24,9 +28,10 @@ class ReviewResponse(BaseModel):
 
 class ReviewListResponse(BaseModel):
     items: list[ReviewResponse]
-    total: int 
-    page:int
+    total: int
+    page: int
     page_size: int
+
 
 class ReviewApprove(BaseModel):
     approved: bool
