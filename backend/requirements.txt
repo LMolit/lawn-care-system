@@ -52,3 +52,6 @@ uvicorn==0.52.1
 weasyprint==70.0
 webencodings==0.6.1
 zopfli==0.4.3
+dnspython==2.8.0
+email-validator==2.3.0
+
