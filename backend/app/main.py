@@ -5,6 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.rate_limit import RateLimitError
 from app.dependencies import get_db
 from app.exceptions import ConflictError, NotFoundError, ValidationError
 from app.routers import (
@@ -75,4 +76,13 @@ def validation_error_handler(request, exc: ValidationError):
     return JSONResponse(
         status_code=400,
         content={"error": "validation_error", "message": exc.message, "detail": None},
+    )
+
+
+@app.exception_handler(RateLimitError)
+def rate_limit_handler(request, exc: RateLimitError):
+    return JSONResponse(
+        status_code=429,
+        content={"error": "rate_limited", "message": exc.message, "detail": None},
+        headers={"Retry-After": str(exc.retry_after)},
     )

@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: localdevpassword
       POSTGRES_DB: lawn_care
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 

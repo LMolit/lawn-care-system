@@ -1,18 +1,23 @@
 import os
 
-os.environ["DATABASE_URL"] = "postgresql://lawncare:localdevpassword@localhost:5432/lawn_care_test"
-
 import pytest
+
+os.environ["DATABASE_URL"] = (
+    "postgresql://lawncare:localdevpassword@localhost:5432/lawn_care_test"
+)
+
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 
-from app.main import app
-from app.dependencies import get_db
 from app.core.security import create_access_token
 from app.db.base import User
+from app.dependencies import get_db
+from app.main import app
 
-engine = create_engine("postgresql://lawncare:localdevpassword@localhost:5432/lawn_care_test")
+engine = create_engine(
+    "postgresql://lawncare:localdevpassword@localhost:5432/lawn_care_test"
+)
 TestSessionLocal = sessionmaker(bind=engine)
 
 
@@ -60,3 +65,10 @@ def authed_client(client, test_user):
     token = create_access_token(test_user.id)
     client.headers.update({"Authorization": f"Bearer {token}"})
     return client
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limits():
+    from app.core.rate_limit import reset_all
+
+    reset_all()
