@@ -73,3 +73,9 @@ login_limit = limit(RateLimiter(max_requests=10, window_seconds=900))  # 10 per 
 refresh_limit = limit(RateLimiter(max_requests=30, window_seconds=900))
 lead_limit = limit(RateLimiter(max_requests=5, window_seconds=3600))  # 5 per hour
 review_limit = limit(RateLimiter(max_requests=3, window_seconds=3600))  # 3 per hour
+password_change_limit = limit(
+    RateLimiter(max_requests=5, window_seconds=900)
+)  # 5 per 15 min
+email_change_limit = limit(
+    RateLimiter(max_requests=5, window_seconds=900)
+)  # 5 per 15 min

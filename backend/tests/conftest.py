@@ -62,7 +62,7 @@ def test_user(db_session):
 
 @pytest.fixture()
 def authed_client(client, test_user):
-    token = create_access_token(test_user.id)
+    token = create_access_token(test_user.id, test_user.token_version)
     client.headers.update({"Authorization": f"Bearer {token}"})
     return client
 

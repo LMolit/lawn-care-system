@@ -3,13 +3,25 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.rate_limit import login_limit, refresh_limit
-from app.core.security import create_access_token, create_refresh_token, verify_password
+from app.core.rate_limit import (
+    email_change_limit,
+    login_limit,
+    password_change_limit,
+    refresh_limit,
+)
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    hash_password,
+    verify_password,
+)
 from app.crud.user import get_user_by_email, get_user_by_id
 from app.db.base import User
 from app.dependencies import get_current_user, get_db
 from app.schemas.auth import (
     AccessTokenResponse,
+    ChangeEmailRequest,
+    ChangePasswordRequest,
     LoginRequest,
     RefreshRequest,
     TokenResponse,
@@ -28,11 +40,15 @@ def login(
 ) -> TokenResponse:
     user = get_user_by_email(db, credentials.email)
 
-    if user is None or not verify_password(credentials.password, user.password_hash):
+    if (
+        user is None
+        or not user.active
+        or not verify_password(credentials.password, user.password_hash)
+    ):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
-    access_token = create_access_token(user.id)
-    refresh_token = create_refresh_token(user.id)
+    access_token = create_access_token(user.id, user.token_version)
+    refresh_token = create_refresh_token(user.id, user.token_version)
 
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
@@ -65,7 +81,10 @@ def get_new_access_token(
     if user is None or not user.active:
         raise HTTPException(status_code=401, detail="User not found or inactive")
 
-    new_token = create_access_token(user_id)
+    if payload.get("ver") != user.token_version:
+        raise HTTPException(status_code=401, detail="Token has been revoked")
+
+    new_token = create_access_token(user_id, user.token_version)
 
     return AccessTokenResponse(access_token=new_token)
 
@@ -73,3 +92,69 @@ def get_new_access_token(
 @router.get("/me", response_model=UserResponse)
 def read_current_user(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.post(
+    "/change-password",
+    response_model=TokenResponse,
+    dependencies=[Depends(password_change_limit)],
+)
+def change_password(
+    body: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> TokenResponse:
+    # Even with a valid token we ask for the current password: a stolen
+    # short-lived token must not be enough to lock the owner out.
+    # 400, not 401: the web app treats 401 as "session expired".
+    if not verify_password(body.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    current_user.password_hash = hash_password(body.new_password)
+    # Bumping the version invalidates every token issued so far, on every device.
+    current_user.token_version += 1
+    db.commit()
+    db.refresh(current_user)
+
+    # The person who just changed it stays logged in, with fresh tokens.
+    return TokenResponse(
+        access_token=create_access_token(current_user.id, current_user.token_version),
+        refresh_token=create_refresh_token(current_user.id, current_user.token_version),
+    )
+
+
+@router.post(
+    "/change-email",
+    response_model=TokenResponse,
+    dependencies=[Depends(email_change_limit)],
+)
+def change_email(
+    body: ChangeEmailRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> TokenResponse:
+    # Password first, so a stolen token can't be used to probe which
+    # addresses are registered.
+    if not verify_password(body.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    new_email = body.new_email.strip().lower()
+    existing = get_user_by_email(db, new_email)
+    if existing is not None:
+        if existing.id == current_user.id:
+            raise HTTPException(
+                status_code=400, detail="That is already your email address"
+            )
+        raise HTTPException(
+            status_code=409, detail="That email address is already in use"
+        )
+
+    current_user.email = new_email
+    current_user.token_version += 1
+    db.commit()
+    db.refresh(current_user)
+
+    return TokenResponse(
+        access_token=create_access_token(current_user.id, current_user.token_version),
+        refresh_token=create_refresh_token(current_user.id, current_user.token_version),
+    )
