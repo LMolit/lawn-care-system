@@ -1,36 +1,50 @@
 # crud/analytics.py
 from datetime import date as date_type
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.db.base import Invoice, Job, JobStatus, Customer, Expense, ExpenseCategory
+from app.core.clock import today_local
+from app.db.base import Customer, Expense, ExpenseCategory, Invoice, Job, JobStatus
 
 
 def get_overview(db: Session) -> dict:
-    today = date_type.today()
+    today = today_local()
     start_of_month = today.replace(day=1)
 
-    revenue_this_month = db.scalar(
-        select(func.sum(Invoice.total)).where(
-            Invoice.issue_date >= start_of_month, Invoice.issue_date <= today
+    revenue_this_month = (
+        db.scalar(
+            select(func.sum(Invoice.total)).where(
+                Invoice.issue_date >= start_of_month, Invoice.issue_date <= today
+            )
         )
-    ) or 0.0
+        or 0.0
+    )
 
-    jobs_completed_this_month = db.scalar(
-        select(func.count()).select_from(Job).where(
-            Job.status == JobStatus.completed,
-            Job.scheduled_date >= start_of_month,
-            Job.scheduled_date <= today,
+    jobs_completed_this_month = (
+        db.scalar(
+            select(func.count())
+            .select_from(Job)
+            .where(
+                Job.status == JobStatus.completed,
+                Job.scheduled_date >= start_of_month,
+                Job.scheduled_date <= today,
+            )
         )
-    ) or 0
+        or 0
+    )
 
-    active_customers = db.scalar(
-        select(func.count()).select_from(Customer).where(Customer.active == True)
-    ) or 0
+    active_customers = (
+        db.scalar(
+            select(func.count()).select_from(Customer).where(Customer.active == True)
+        )
+        or 0
+    )
 
     avg_job_duration_minutes = db.scalar(
-        select(func.avg(Job.actual_duration_minutes)).where(Job.actual_duration_minutes.is_not(None))
+        select(func.avg(Job.actual_duration_minutes)).where(
+            Job.actual_duration_minutes.is_not(None)
+        )
     )
 
     return {
@@ -42,17 +56,23 @@ def get_overview(db: Session) -> dict:
 
 
 def get_profit_loss(db: Session, *, start_date: date_type, end_date: date_type) -> dict:
-    revenue = db.scalar(
-        select(func.sum(Invoice.total)).where(
-            Invoice.issue_date >= start_date, Invoice.issue_date <= end_date
+    revenue = (
+        db.scalar(
+            select(func.sum(Invoice.total)).where(
+                Invoice.issue_date >= start_date, Invoice.issue_date <= end_date
+            )
         )
-    ) or 0.0
+        or 0.0
+    )
 
-    expenses = db.scalar(
-        select(func.sum(Expense.amount)).where(
-            Expense.date >= start_date, Expense.date <= end_date
+    expenses = (
+        db.scalar(
+            select(func.sum(Expense.amount)).where(
+                Expense.date >= start_date, Expense.date <= end_date
+            )
         )
-    ) or 0.0
+        or 0.0
+    )
 
     profit = revenue - expenses
 

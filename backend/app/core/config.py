@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     email_from_address: str
     business_name: str = "Liberty Lawn Care"
     cors_origins: str = "http://localhost:3000"
+    business_timezone: str = "America/Chicago"
 
     class Config:
         env_file = ".env"

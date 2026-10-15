@@ -1,14 +1,27 @@
-from datetime import date as date_type, datetime, timezone
+from datetime import date as date_type
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.base import Invoice, InvoiceLineItem, Job, JobStatus, Service, Customer, InvoiceStatus
-from app.exceptions import NotFoundError, ConflictError, ValidationError
-from app.services.invoicing import get_next_invoice_number
+from app.core.clock import today_local
+from app.db.base import (
+    Customer,
+    Invoice,
+    InvoiceLineItem,
+    InvoiceStatus,
+    Job,
+    JobStatus,
+    Service,
+)
+from app.exceptions import ConflictError, NotFoundError, ValidationError
 from app.services.email import render_invoice_pdf, send_invoice_email
+from app.services.invoicing import get_next_invoice_number
 
-def create_invoice(db: Session, *, customer_id: int, job_ids: list[int], due_date: date_type) -> Invoice:
+
+def create_invoice(
+    db: Session, *, customer_id: int, job_ids: list[int], due_date: date_type
+) -> Invoice:
     customer = db.get(Customer, customer_id)
     if customer is None:
         raise NotFoundError(f"Customer {customer_id} not found")
@@ -19,9 +32,13 @@ def create_invoice(db: Session, *, customer_id: int, job_ids: list[int], due_dat
         if job is None:
             raise NotFoundError(f"Job {job_id} not found")
         if job.customer_id != customer_id:
-            raise ValidationError(f"Job {job_id} does not belong to customer {customer_id}")
+            raise ValidationError(
+                f"Job {job_id} does not belong to customer {customer_id}"
+            )
         if job.status != JobStatus.completed:
-            raise ValidationError(f"Job {job_id} is not completed (current status: {job.status.value})")
+            raise ValidationError(
+                f"Job {job_id} is not completed (current status: {job.status.value})"
+            )
 
         already_billed = db.scalar(
             select(InvoiceLineItem).where(InvoiceLineItem.job_id == job_id)
@@ -53,7 +70,7 @@ def create_invoice(db: Session, *, customer_id: int, job_ids: list[int], due_dat
     invoice = Invoice(
         customer_id=customer_id,
         invoice_number=get_next_invoice_number(db),
-        issue_date=date_type.today(),
+        issue_date=today_local(),
         due_date=due_date,
         subtotal=subtotal,
         tax=tax,
@@ -70,6 +87,7 @@ def create_invoice(db: Session, *, customer_id: int, job_ids: list[int], due_dat
     db.refresh(invoice)
     return invoice
 
+
 def send_invoice(db: Session, *, id: int) -> Invoice:
     invoice = db.get(Invoice, id)
     if invoice is None:
@@ -85,6 +103,7 @@ def send_invoice(db: Session, *, id: int) -> Invoice:
     db.commit()
     db.refresh(invoice)
     return invoice
+
 
 def get_invoice(db: Session, *, id: int) -> Invoice:
     invoice = db.get(Invoice, id)

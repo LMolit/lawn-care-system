@@ -2,6 +2,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
+from app.core.clock import today_local
 from app.db.base import JobStatus, JobType
 
 
@@ -18,7 +19,7 @@ class JobCreate(BaseModel):
     @field_validator("scheduled_date")
     @classmethod
     def date_not_in_past(cls, value: date) -> date:
-        if value < date.today():
+        if value < today_local():
             raise ValueError("scheduled_date cannot be in the past")
         return value
 
@@ -37,7 +38,7 @@ class JobUpdate(BaseModel):
     @field_validator("scheduled_date")
     @classmethod
     def date_not_in_past(cls, value: date | None) -> date | None:
-        if value is not None and value < date.today():
+        if value is not None and value < today_local():
             raise ValueError("scheduled_date cannot be in the past")
         return value
 
@@ -65,6 +66,7 @@ class JobListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
 
 class JobEventRequest(BaseModel):
     latitude: float
