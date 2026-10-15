@@ -4,9 +4,11 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TimestampMixin
 
+
 class UserRole(str, enum.Enum):
     admin = "admin"
     # crew role added phase 2
+
 
 class User(Base, TimestampMixin):
     __tablename__ = "users"
@@ -17,3 +19,4 @@ class User(Base, TimestampMixin):
     name: Mapped[str]
     phone: Mapped[str | None]
     active: Mapped[bool] = mapped_column(default=True)
+    token_version: Mapped[int] = mapped_column(default=0, server_default="0")
