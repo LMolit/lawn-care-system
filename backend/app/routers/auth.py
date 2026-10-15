@@ -3,7 +3,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.rate_limit import login_limit, password_change_limit, refresh_limit
+from app.core.rate_limit import (
+    email_change_limit,
+    login_limit,
+    password_change_limit,
+    refresh_limit,
+)
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -15,6 +20,7 @@ from app.db.base import User
 from app.dependencies import get_current_user, get_db
 from app.schemas.auth import (
     AccessTokenResponse,
+    ChangeEmailRequest,
     ChangePasswordRequest,
     LoginRequest,
     RefreshRequest,
@@ -111,6 +117,43 @@ def change_password(
     db.refresh(current_user)
 
     # The person who just changed it stays logged in, with fresh tokens.
+    return TokenResponse(
+        access_token=create_access_token(current_user.id, current_user.token_version),
+        refresh_token=create_refresh_token(current_user.id, current_user.token_version),
+    )
+
+
+@router.post(
+    "/change-email",
+    response_model=TokenResponse,
+    dependencies=[Depends(email_change_limit)],
+)
+def change_email(
+    body: ChangeEmailRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> TokenResponse:
+    # Password first, so a stolen token can't be used to probe which
+    # addresses are registered.
+    if not verify_password(body.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    new_email = body.new_email.strip().lower()
+    existing = get_user_by_email(db, new_email)
+    if existing is not None:
+        if existing.id == current_user.id:
+            raise HTTPException(
+                status_code=400, detail="That is already your email address"
+            )
+        raise HTTPException(
+            status_code=409, detail="That email address is already in use"
+        )
+
+    current_user.email = new_email
+    current_user.token_version += 1
+    db.commit()
+    db.refresh(current_user)
+
     return TokenResponse(
         access_token=create_access_token(current_user.id, current_user.token_version),
         refresh_token=create_refresh_token(current_user.id, current_user.token_version),

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, field_validator, model_validator
 
 from app.core.security import MAX_PASSWORD_BYTES
 
@@ -55,3 +55,8 @@ class ChangePasswordRequest(BaseModel):
         if self.new_password == self.current_password:
             raise ValueError("New password must be different from the current one")
         return self
+
+
+class ChangeEmailRequest(BaseModel):
+    current_password: str
+    new_email: EmailStr

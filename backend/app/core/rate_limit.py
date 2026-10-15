@@ -76,3 +76,6 @@ review_limit = limit(RateLimiter(max_requests=3, window_seconds=3600))  # 3 per 
 password_change_limit = limit(
     RateLimiter(max_requests=5, window_seconds=900)
 )  # 5 per 15 min
+email_change_limit = limit(
+    RateLimiter(max_requests=5, window_seconds=900)
+)  # 5 per 15 min
