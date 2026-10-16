@@ -162,3 +162,9 @@ describe("loginAction", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+it("hands the typed email back on failure, never the password", async () => {
+  fetchMock.mockResolvedValue(reply({ detail: "no" }, 401));
+  const state = await loginAction({}, form("owner@example.com"));
+  expect(state.email).toBe("owner@example.com");
+  expect(JSON.stringify(state)).not.toContain(PASSWORD);
+});
