@@ -1,23 +1,13 @@
 import { cookies } from "next/headers";
+import {
+  ACCESS_COOKIE,
+  ACCESS_MAX_AGE,
+  REFRESH_COOKIE,
+  REFRESH_MAX_AGE,
+  cookieOptions,
+} from "./shared";
 
-export const ACCESS_COOKIE = "admin_at";
-export const REFRESH_COOKIE = "admin_rt";
-
-// The backend's access token lasts 30 minutes and the refresh token 30 days.
-// The access cookie dies a minute early so a request never carries a token
-// the backend has already rejected.
-const ACCESS_MAX_AGE = 29 * 60;
-const REFRESH_MAX_AGE = 30 * 24 * 60 * 60;
-
-function cookieOptions() {
-  return {
-    httpOnly: true, // JavaScript on the page can never read these
-    // Safari refuses Secure cookies on http://localhost, so only in production
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
-    path: "/admin", // the browser sends them to admin URLs only
-  };
-}
+export { ACCESS_COOKIE, REFRESH_COOKIE };
 
 export async function setSessionCookies(tokens: {
   access_token: string;

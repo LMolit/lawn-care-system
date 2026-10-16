@@ -1,13 +1,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { ACCESS_COOKIE } from "./session";
+import { ACCESS_COOKIE, apiUrl } from "./shared";
 
-// Server-side only. Falls back to the public URL for local development,
-// the same way lib/api/reviews.ts does. Read at call time, not import time,
-// so tests can change it.
-export function apiUrl() {
-  return process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL;
-}
+export { apiUrl };
 
 // Every admin read and write goes through here. No session or a rejected
 // token means back to the login page. Other statuses are the caller's to handle.
