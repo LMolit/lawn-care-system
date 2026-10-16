@@ -135,3 +135,45 @@ def test_change_email_is_rate_limited(client, owner):
             _change_email(client, token, current="not-the-password").status_code == 400
         )
     assert _change_email(client, token, current="not-the-password").status_code == 429
+
+
+def _logout_everywhere(client, token):
+    return client.post("/api/v1/auth/logout-everywhere", headers=_bearer(token))
+
+
+def test_logout_everywhere_requires_auth(client, owner):
+    assert client.post("/api/v1/auth/logout-everywhere").status_code == 401
+
+
+def test_logout_everywhere_returns_204_and_no_tokens(client, owner):
+    token = _login(client).json()["access_token"]
+    response = _logout_everywhere(client, token)
+    assert response.status_code == 204
+    assert response.content == b""
+
+
+def test_logout_everywhere_revokes_every_token(client, owner):
+    first = _login(client).json()
+    second = _login(client).json()  # another device
+    _logout_everywhere(client, first["access_token"])
+    for tokens in (first, second):
+        me = client.get("/api/v1/auth/me", headers=_bearer(tokens["access_token"]))
+        assert me.status_code == 401
+        refresh = client.post(
+            "/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
+        )
+        assert refresh.status_code == 401
+
+
+def test_can_log_in_again_after_logging_out_everywhere(client, owner):
+    token = _login(client).json()["access_token"]
+    _logout_everywhere(client, token)
+    again = _login(client)
+    assert again.status_code == 200
+    me = client.get("/api/v1/auth/me", headers=_bearer(again.json()["access_token"]))
+    assert me.status_code == 200
+
+
+def test_logout_everywhere_rejects_a_refresh_token(client, owner):
+    refresh = create_refresh_token(owner.id, owner.token_version)
+    assert _logout_everywhere(client, refresh).status_code == 401

@@ -1,10 +1,11 @@
 import jwt
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.rate_limit import (
     email_change_limit,
+    login_failures,
     login_limit,
     password_change_limit,
     refresh_limit,
@@ -38,6 +39,13 @@ def login(
     credentials: LoginRequest,
     db: Session = Depends(get_db),
 ) -> TokenResponse:
+    # Same normalization as the lookup, so "Owner@X.com" and "owner@x.com" share a count.
+    email_key = credentials.email.strip().lower()
+
+    # Checked before any password work. A locked email never reaches bcrypt,
+    # so an attacker can't burn our CPU on it either.
+    login_failures.check(email_key)
+
     user = get_user_by_email(db, credentials.email)
 
     if (
@@ -45,7 +53,11 @@ def login(
         or not user.active
         or not verify_password(credentials.password, user.password_hash)
     ):
+        # Recorded for unknown emails too, so lockout reveals nothing about accounts.
+        login_failures.record_failure(email_key)
         raise HTTPException(status_code=401, detail="Incorrect email or password")
+
+    login_failures.clear(email_key)
 
     access_token = create_access_token(user.id, user.token_version)
     refresh_token = create_refresh_token(user.id, user.token_version)
@@ -158,3 +170,17 @@ def change_email(
         access_token=create_access_token(current_user.id, current_user.token_version),
         refresh_token=create_refresh_token(current_user.id, current_user.token_version),
     )
+
+
+@router.post("/logout-everywhere", status_code=204)
+def logout_everywhere(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    # Every token issued so far carries the old version, so all of them die,
+    # including the one used for this request. No new tokens are returned on
+    # purpose: a stolen access token must not be convertible into a 30-day
+    # refresh token. The caller has to log in again.
+    current_user.token_version += 1
+    db.commit()
+    return Response(status_code=204)
