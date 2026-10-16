@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 from app.core.security import MAX_PASSWORD_BYTES
 
@@ -6,8 +6,8 @@ MIN_PASSWORD_LENGTH = 12
 
 
 class LoginRequest(BaseModel):
-    email: str
-    password: str
+    email: str = Field(max_length=254)  # 254 is the longest valid email address
+    password: str = Field(max_length=1024)
 
 
 class TokenResponse(BaseModel):
