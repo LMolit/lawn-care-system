@@ -34,6 +34,7 @@ def test_convert_nonexistent_lead_returns_404(authed_client):
     )
     assert response.status_code == 404
 
+
 def test_list_leads_shows_created_lead(authed_client):
     create_response = authed_client.post(
         "/api/v1/leads",
@@ -93,3 +94,28 @@ def test_convert_already_converted_lead_returns_409(authed_client):
 
     second = authed_client.post(f"/api/v1/leads/{lead_id}/convert")
     assert second.status_code == 409
+
+
+LEAD = {"name": "Spam Test", "address": "1 Spam Way"}
+
+
+def test_submitting_leads_is_rate_limited_per_visitor(client):
+    for _ in range(5):
+        assert client.post("/api/v1/leads", json=LEAD).status_code == 201
+    response = client.post("/api/v1/leads", json=LEAD)
+    assert response.status_code == 429
+    assert response.json()["error"] == "rate_limited"
+    assert "retry-after" in response.headers
+
+
+def test_one_visitors_lead_limit_does_not_block_another(client):
+    first_visitor = {"cf-connecting-ip": "203.0.113.1"}
+    for _ in range(5):
+        client.post("/api/v1/leads", json=LEAD, headers=first_visitor)
+
+    blocked = client.post("/api/v1/leads", json=LEAD, headers=first_visitor)
+    other = client.post(
+        "/api/v1/leads", json=LEAD, headers={"cf-connecting-ip": "203.0.113.2"}
+    )
+    assert blocked.status_code == 429
+    assert other.status_code == 201
