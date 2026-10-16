@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Fraunces, DM_Sans } from "next/font/google";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import "./globals.css";
 import { site } from "@/lib/site";
@@ -49,11 +47,7 @@ export default function RootLayout({
       className={`${fraunces.variable} ${dmSans.variable}`}
     >
       <body className="flex min-h-screen flex-col">
-        <QueryProvider>
-          <Header />
-          <div className="flex-1">{children}</div>
-          <Footer />
-        </QueryProvider>
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );
