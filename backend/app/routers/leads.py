@@ -3,16 +3,22 @@ import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from app.core.rate_limit import lead_limit
 from app.crud import leads as leads_crud
 from app.db.base import LeadStatus
-from app.dependencies import get_db, get_current_user
-from app.schemas.leads import LeadCreate, LeadResponse, LeadListResponse
+from app.dependencies import get_current_user, get_db
 from app.schemas.customers import CustomerResponse
+from app.schemas.leads import LeadCreate, LeadListResponse, LeadResponse
 
 router = APIRouter(prefix="/api/v1/leads", tags=["leads"])
 
 
-@router.post("", response_model=LeadResponse, status_code=201)
+@router.post(
+    "",
+    response_model=LeadResponse,
+    status_code=201,
+    dependencies=[Depends(lead_limit)],
+)
 def create_lead(payload: LeadCreate, db: Session = Depends(get_db)):
     lead = leads_crud.create_lead(
         db,
@@ -24,10 +30,10 @@ def create_lead(payload: LeadCreate, db: Session = Depends(get_db)):
     )
     return lead
 
-@router.post("/{lead_id}/convert", response_model=CustomerResponse, status_code=201)
 
+@router.post("/{lead_id}/convert", response_model=CustomerResponse, status_code=201)
 def convert_lead(
-    lead_id:uuid.UUID,
+    lead_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -42,5 +48,7 @@ def list_leads(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    items, total = leads_crud.get_leads(db, status=status, page=page, page_size=page_size)
+    items, total = leads_crud.get_leads(
+        db, status=status, page=page, page_size=page_size
+    )
     return LeadListResponse(items=items, total=total, page=page, page_size=page_size)
