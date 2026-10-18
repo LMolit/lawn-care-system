@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
+from app.db.models.review import ReviewStatus
 from app.schemas.types import LongText, ShortText
 
 
@@ -12,6 +13,7 @@ class ReviewCreate(BaseModel):
     comment: LongText | None = None
 
 
+# Public: what the website sees. Moderation details stay out of it.
 class ReviewResponse(BaseModel):
     id: uuid.UUID
     customer_id: int | None
@@ -22,8 +24,7 @@ class ReviewResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ReviewListResponse(BaseModel):
@@ -33,5 +34,32 @@ class ReviewListResponse(BaseModel):
     page_size: int
 
 
-class ReviewApprove(BaseModel):
-    approved: bool
+# Admin: includes the moderation status.
+class ReviewAdminResponse(BaseModel):
+    id: uuid.UUID
+    customer_id: int | None
+    name: str
+    rating: int
+    comment: str | None
+    status: ReviewStatus
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ReviewAdminListResponse(BaseModel):
+    items: list[ReviewAdminResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+class ReviewCounts(BaseModel):
+    pending: int
+    approved: int
+    hidden: int
+
+
+class ReviewStatusUpdate(BaseModel):
+    status: ReviewStatus
