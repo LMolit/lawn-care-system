@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { LogOut } from "lucide-react";
+import { AdminNav } from "@/components/admin/AdminNav";
 import { adminFetch } from "@/lib/admin/api";
 import type { paths } from "@/lib/api/schema";
 import { logoutAction } from "./actions";
@@ -24,14 +24,7 @@ export default async function ConsoleLayout({
           </p>
           <p className="text-sm text-white/70">Admin</p>
         </div>
-        <nav aria-label="Admin">
-          <Link
-            href="/admin"
-            className="block rounded-lg bg-white/10 px-3 py-2 font-semibold"
-          >
-            Dashboard
-          </Link>
-        </nav>
+        <AdminNav />
         <div className="md:mt-auto">
           <p className="mb-2 hidden truncate text-sm text-white/70 md:block">
             {me.email}
