@@ -159,7 +159,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/reviews/{review_id}/approve": {
+    "/api/v1/reviews/admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Reviews For Moderation */
+        get: operations["list_reviews_for_moderation_api_v1_reviews_admin_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reviews/admin/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Count Reviews */
+        get: operations["count_reviews_api_v1_reviews_admin_counts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reviews/{review_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -172,8 +206,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Approve Review */
-        patch: operations["approve_review_api_v1_reviews__review_id__approve_patch"];
+        /** Update Review Status */
+        patch: operations["update_review_status_api_v1_reviews__review_id__patch"];
         trace?: never;
     };
     "/api/v1/customers": {
@@ -1081,10 +1115,52 @@ export interface components {
             /** Refresh Token */
             refresh_token: string;
         };
-        /** ReviewApprove */
-        ReviewApprove: {
+        /** ReviewAdminListResponse */
+        ReviewAdminListResponse: {
+            /** Items */
+            items: components["schemas"]["ReviewAdminResponse"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** ReviewAdminResponse */
+        ReviewAdminResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Customer Id */
+            customer_id: number | null;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
+            /** Comment */
+            comment: string | null;
+            status: components["schemas"]["ReviewStatus"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** ReviewCounts */
+        ReviewCounts: {
+            /** Pending */
+            pending: number;
             /** Approved */
-            approved: boolean;
+            approved: number;
+            /** Hidden */
+            hidden: number;
         };
         /** ReviewCreate */
         ReviewCreate: {
@@ -1133,6 +1209,15 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /**
+         * ReviewStatus
+         * @enum {string}
+         */
+        ReviewStatus: "pending" | "approved" | "hidden";
+        /** ReviewStatusUpdate */
+        ReviewStatusUpdate: {
+            status: components["schemas"]["ReviewStatus"];
         };
         /** RouteGenerateRequest */
         RouteGenerateRequest: {
@@ -1610,7 +1695,60 @@ export interface operations {
             };
         };
     };
-    approve_review_api_v1_reviews__review_id__approve_patch: {
+    list_reviews_for_moderation_api_v1_reviews_admin_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["ReviewStatus"] | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewAdminListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    count_reviews_api_v1_reviews_admin_counts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewCounts"];
+                };
+            };
+        };
+    };
+    update_review_status_api_v1_reviews__review_id__patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -1621,7 +1759,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ReviewApprove"];
+                "application/json": components["schemas"]["ReviewStatusUpdate"];
             };
         };
         responses: {
@@ -1631,7 +1769,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ReviewResponse"];
+                    "application/json": components["schemas"]["ReviewAdminResponse"];
                 };
             };
             /** @description Validation Error */
