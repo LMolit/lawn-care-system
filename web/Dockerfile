@@ -19,9 +19,12 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-COPY --from=build /app/web/.next/standalone ./
-COPY --from=build /app/web/.next/static ./web/.next/static
-COPY --from=build /app/web/public ./web/public
+# --chown matters: the server runs as `node` and writes its page cache
+# (.next/cache and re-rendered pages). Files copied without it belong to root,
+# and the home page's 60-second review refresh silently fails.
+COPY --from=build --chown=node:node /app/web/.next/standalone ./
+COPY --from=build --chown=node:node /app/web/.next/static ./web/.next/static
+COPY --from=build --chown=node:node /app/web/public ./web/public
 
 USER node
 EXPOSE 3000
