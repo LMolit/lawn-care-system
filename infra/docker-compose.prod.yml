@@ -50,6 +50,7 @@ services:
       EMAIL_API_KEY: ${EMAIL_API_KEY}
       EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
       CORS_ORIGINS: https://libertylawncarebatavia.com
+      OWNER_ALERT_EMAIL: ${OWNER_ALERT_EMAIL:-}
     expose:
       - "8000"
     depends_on:
