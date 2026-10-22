@@ -1,7 +1,7 @@
-from sqlalchemy import select, func
-from sqlalchemy.orm import Session
 from geoalchemy2.shape import from_shape, to_shape
 from shapely.geometry import Point
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
 
 from app.db.base import Property
 from app.exceptions import NotFoundError
@@ -29,7 +29,9 @@ def get_property(db: Session, *, property_id: int) -> dict:
     return _property_to_dict(property)
 
 
-def get_properties(db: Session, *, customer_id: int | None = None, page: int = 1, page_size: int = 25) -> tuple[list[dict], int]:
+def get_properties(
+    db: Session, *, customer_id: int | None = None, page: int = 1, page_size: int = 25
+) -> tuple[list[dict], int]:
     query = select(Property)
     count_query = select(func.count()).select_from(Property)
 
@@ -38,7 +40,11 @@ def get_properties(db: Session, *, customer_id: int | None = None, page: int = 1
         count_query = count_query.where(Property.customer_id == customer_id)
 
     total = db.scalar(count_query)
-    query = query.order_by(Property.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
+    query = (
+        query.order_by(Property.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
     items = list(db.scalars(query))
 
     return [_property_to_dict(p) for p in items], total
@@ -53,6 +59,7 @@ def create_property(
     longitude: float,
     lawn_size_sqft: int | None = None,
     access_notes: str | None = None,
+    commit: bool = True,
 ) -> dict:
     location = from_shape(Point(longitude, latitude), srid=4326)
     property = Property(
@@ -63,7 +70,10 @@ def create_property(
         access_notes=access_notes,
     )
     db.add(property)
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()  # assigns the id, keeps the transaction open
     return _property_to_dict(property)
 
 

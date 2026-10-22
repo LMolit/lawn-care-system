@@ -7,8 +7,13 @@ from app.core.rate_limit import lead_limit
 from app.crud import leads as leads_crud
 from app.db.base import LeadStatus
 from app.dependencies import get_current_user, get_db
-from app.schemas.customers import CustomerResponse
-from app.schemas.leads import LeadCreate, LeadListResponse, LeadResponse
+from app.schemas.leads import (
+    ConvertLeadRequest,
+    LeadConversionResponse,
+    LeadCreate,
+    LeadListResponse,
+    LeadResponse,
+)
 
 router = APIRouter(prefix="/api/v1/leads", tags=["leads"])
 
@@ -31,13 +36,26 @@ def create_lead(payload: LeadCreate, db: Session = Depends(get_db)):
     return lead
 
 
-@router.post("/{lead_id}/convert", response_model=CustomerResponse, status_code=201)
+@router.post(
+    "/{lead_id}/convert", response_model=LeadConversionResponse, status_code=201
+)
 def convert_lead(
     lead_id: uuid.UUID,
+    payload: ConvertLeadRequest | None = None,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    return leads_crud.convert_lead(db, lead_id)
+    location = payload.location if payload else None
+    customer, created_property = leads_crud.convert_lead(
+        db,
+        lead_id,
+        property_address=location.address if location else None,
+        latitude=location.latitude if location else None,
+        longitude=location.longitude if location else None,
+    )
+    response = LeadConversionResponse.model_validate(customer)
+    response.property_id = created_property["id"] if created_property else None
+    return response
 
 
 @router.get("", response_model=LeadListResponse)

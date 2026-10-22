@@ -1,22 +1,43 @@
 import uuid
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
 
 from app.db.base import Customer
 from app.exceptions import NotFoundError
 
-def create_customer(db: Session, *, name: str, email: str | None, phone: str | None, notes: str |None = None, lead_id: uuid.UUID | None = None) -> Customer:
-    customer = Customer(name=name, email=email, phone=phone, notes=notes, lead_id=lead_id)
+
+def create_customer(
+    db: Session,
+    *,
+    name: str,
+    email: str | None,
+    phone: str | None,
+    notes: str | None = None,
+    lead_id: uuid.UUID | None = None,
+    commit: bool = True,
+) -> Customer:
+    customer = Customer(
+        name=name, email=email, phone=phone, notes=notes, lead_id=lead_id
+    )
     db.add(customer)
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        # flush sends the INSERT, so customer.id exists, but keeps the transaction open
+        # for the caller to commit together with whatever else it is doing.
+        db.flush()
     return customer
+
 
 def get_customer(db: Session, *, id: int) -> Customer:
 
     return db.get(Customer, id)
 
-def get_customers(db: Session, *, active: bool | None, page: int = 1, page_size: int = 25) -> tuple[list[Customer], int]:
+
+def get_customers(
+    db: Session, *, active: bool | None, page: int = 1, page_size: int = 25
+) -> tuple[list[Customer], int]:
     query = select(Customer)
     count_query = select(func.count()).select_from(Customer)
 
@@ -25,13 +46,26 @@ def get_customers(db: Session, *, active: bool | None, page: int = 1, page_size:
         count_query = count_query.where(Customer.active == active)
 
     total = db.scalar(count_query)
-    query = query.order_by(Customer.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
-    items =  list(db.scalars(query))
+    query = (
+        query.order_by(Customer.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    items = list(db.scalars(query))
 
     return items, total
 
 
-def update_customer(db: Session, *, id: int, name: str | None, email: str | None, phone: str |None, notes: str | None, active: bool | None) -> Customer:
+def update_customer(
+    db: Session,
+    *,
+    id: int,
+    name: str | None,
+    email: str | None,
+    phone: str | None,
+    notes: str | None,
+    active: bool | None,
+) -> Customer:
 
     customer = db.get(Customer, id)
 
