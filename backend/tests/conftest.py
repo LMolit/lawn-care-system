@@ -7,7 +7,7 @@ os.environ["DATABASE_URL"] = (
 )
 
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.core.security import create_access_token
@@ -24,15 +24,15 @@ TestSessionLocal = sessionmaker(bind=engine)
 @pytest.fixture()
 def db_session():
     connection = engine.connect()
+    # One outer transaction per test, always rolled back at the end, so no test
+    # leaves anything behind.
     transaction = connection.begin()
-    session = TestSessionLocal(bind=connection)
-
-    session.begin_nested()
-
-    @event.listens_for(session, "after_transaction_end")
-    def restart_savepoint(session, transaction):
-        if transaction.nested and not transaction._parent.nested:
-            session.begin_nested()
+    # create_savepoint: the session's own commit() and rollback() work on a SAVEPOINT
+    # inside that outer transaction. A rollback in the app code undoes only the app's
+    # unfinished work, exactly like production, and never the test's own setup.
+    session = TestSessionLocal(
+        bind=connection, join_transaction_mode="create_savepoint"
+    )
 
     yield session
 
