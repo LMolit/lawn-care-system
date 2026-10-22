@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     business_name: str = "Liberty Lawn Care"
     cors_origins: str = "http://localhost:3000"
     business_timezone: str = "America/Chicago"
+    # Where "new lead" and "new review" alerts go. Blank turns alerts off.
+    owner_alert_email: str = ""
+    # Public address of the site, used for the links inside alert emails.
+    site_url: str = "https://libertylawncarebatavia.com"
 
     class Config:
         env_file = ".env"

@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.rate_limit import review_limit
@@ -18,6 +18,7 @@ from app.schemas.reviews import (
     ReviewResponse,
     ReviewStatusUpdate,
 )
+from app.services.email import notify_new_review
 
 router = APIRouter(prefix="/api/v1/reviews", tags=["reviews"])
 
@@ -28,13 +29,18 @@ router = APIRouter(prefix="/api/v1/reviews", tags=["reviews"])
     status_code=201,
     dependencies=[Depends(review_limit)],
 )
-def create_review(payload: ReviewCreate, db: Session = Depends(get_db)):
+def create_review(
+    payload: ReviewCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     review = reviews_crud.create_review(
         db,
         name=payload.name,
         rating=payload.rating,
         comment=payload.comment,
     )
+    background_tasks.add_task(notify_new_review)
     return review
 
 

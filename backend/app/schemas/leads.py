@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, EmailStr, Field, StringConstraints
+from pydantic import BaseModel, EmailStr, Field, StringConstraints, field_validator
 
 from app.db.models.lead import LeadStatus
 from app.schemas.customers import CustomerResponse
@@ -17,6 +17,7 @@ class LeadCreate(BaseModel):
     message: LongText | None = None
 
 
+# What the public website gets back after submitting a quote request.
 class LeadResponse(BaseModel):
     id: uuid.UUID
     name: str
@@ -33,11 +34,37 @@ class LeadResponse(BaseModel):
         from_attributes = True
 
 
+# What the logged-in owner gets: the same, plus internal notes.
+class LeadAdminResponse(LeadResponse):
+    notes: str | None
+
+
 class LeadListResponse(BaseModel):
-    items: list[LeadResponse]
+    items: list[LeadAdminResponse]
     total: int
     page: int
     page_size: int
+
+
+class LeadCounts(BaseModel):
+    new: int
+    contacted: int
+    quoted: int
+    converted: int
+    lost: int
+
+
+class LeadUpdate(BaseModel):
+    status: LeadStatus | None = None
+    notes: LongText | None = None
+
+    @field_validator("status")
+    @classmethod
+    def converted_only_through_conversion(cls, value):
+        # "converted" means a customer record exists, so only the convert action may set it.
+        if value == LeadStatus.converted:
+            raise ValueError("Use the convert action to convert a lead")
+        return value
 
 
 class ConvertLocation(BaseModel):

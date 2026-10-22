@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.crud.customers import create_customer
@@ -29,8 +29,18 @@ def get_lead(db: Session, lead_id: uuid.UUID) -> Lead | None:
     return db.get(Lead, lead_id)
 
 
+def _escape_like(term: str) -> str:
+    # In a LIKE pattern, % and _ are wildcards. Escape them so a search for "%" means "%".
+    return term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def get_leads(
-    db: Session, *, status: LeadStatus | None = None, page: int = 1, page_size: int = 25
+    db: Session,
+    *,
+    status: LeadStatus | None = None,
+    q: str | None = None,
+    page: int = 1,
+    page_size: int = 25,
 ) -> tuple[list[Lead], int]:
 
     query = select(Lead)
@@ -40,16 +50,63 @@ def get_leads(
         query = query.where(Lead.status == status)
         count_query = count_query.where(Lead.status == status)
 
+    term = q.strip() if q else ""
+    if term:
+        pattern = f"%{_escape_like(term)}%"
+        matches = or_(
+            *(
+                column.ilike(pattern, escape="\\")
+                for column in (Lead.name, Lead.email, Lead.phone, Lead.address)
+            )
+        )
+        query = query.where(matches)
+        count_query = count_query.where(matches)
+
     total = db.scalar(count_query)
 
+    # id as a tiebreaker keeps pages stable when created_at values match
     query = (
-        query.order_by(Lead.created_at.desc())
+        query.order_by(Lead.created_at.desc(), Lead.id)
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
     items = list(db.scalars(query))
 
     return items, total
+
+
+def count_leads_by_status(db: Session) -> dict[LeadStatus, int]:
+    rows = db.execute(select(Lead.status, func.count()).group_by(Lead.status)).all()
+    counts = {
+        status: 0 for status in LeadStatus
+    }  # a status with no rows still shows as 0
+    for status, count in rows:
+        counts[status] = count
+    return counts
+
+
+def update_lead(db: Session, lead_id: uuid.UUID, changes: dict) -> Lead:
+    # Locked like convert_lead, so a status change can't slip in during a conversion.
+    lead = db.scalar(
+        select(Lead)
+        .where(Lead.id == lead_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    if lead is None:
+        raise NotFoundError(f"Lead {lead_id} not found")
+
+    if changes.get("status") is not None:
+        if lead.status == LeadStatus.converted:
+            raise ConflictError("A converted lead's status can't be changed")
+        lead.status = changes["status"]
+
+    if "notes" in changes:
+        lead.notes = changes["notes"] or None  # "" or null clears the note
+
+    db.commit()
+    db.refresh(lead)
+    return lead
 
 
 def convert_lead(
