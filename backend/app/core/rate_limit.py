@@ -131,6 +131,7 @@ password_change_limit = limit(
 email_change_limit = limit(
     RateLimiter(max_requests=5, window_seconds=900)
 )  # 5 per 15 min
+geocode_limit = limit(RateLimiter(max_requests=30, window_seconds=3600))  # 30 per hour
 
 # Per-email lockout. Deliberately higher than the per-IP login limit (10), so a
 # single address can never trigger it; it takes failures from several addresses.

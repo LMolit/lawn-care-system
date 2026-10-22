@@ -7,12 +7,18 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.rate_limit import RateLimitError
 from app.dependencies import get_db
-from app.exceptions import ConflictError, NotFoundError, ValidationError
+from app.exceptions import (
+    ConflictError,
+    GeocodingUnavailableError,
+    NotFoundError,
+    ValidationError,
+)
 from app.routers import (
     analytics,
     auth,
     customers,
     expenses,
+    geocode,
     invoices,
     jobs,
     leads,
@@ -47,6 +53,7 @@ app.include_router(invoices.router)
 app.include_router(payments.router)
 app.include_router(expenses.router)
 app.include_router(analytics.router)
+app.include_router(geocode.router)
 
 
 @app.exception_handler(NotFoundError)
@@ -85,4 +92,16 @@ def rate_limit_handler(request, exc: RateLimitError):
         status_code=429,
         content={"error": "rate_limited", "message": exc.message, "detail": None},
         headers={"Retry-After": str(exc.retry_after)},
+    )
+
+
+@app.exception_handler(GeocodingUnavailableError)
+def geocoding_unavailable_handler(request, exc: GeocodingUnavailableError):
+    return JSONResponse(
+        status_code=503,
+        content={
+            "error": "geocoding_unavailable",
+            "message": exc.message,
+            "detail": None,
+        },
     )
